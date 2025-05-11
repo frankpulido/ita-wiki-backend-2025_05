@@ -6,6 +6,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 use App\Rules\GithubIdRule;
+use App\Rules\RoleNameRule;
 
 class UpdateRoleRequest extends FormRequest
 {
@@ -27,7 +28,7 @@ class UpdateRoleRequest extends FormRequest
         return [
             'authorized_github_id' => new GithubIdRule(),
             'github_id' => new GithubIdRule(),
-            'role' => ['required', 'string', 'in:superadmin,mentor,admin,student'],
+            'role' => ['required', 'string', new RoleNameRule()],
         ];
     }
 }

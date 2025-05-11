@@ -5,6 +5,8 @@ declare (strict_types= 1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Rules\GithubIdRule;
+use App\Rules\RoleNameRule;
 
 class CreateRoleRequest extends FormRequest
 {
@@ -24,9 +26,9 @@ class CreateRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'authorized_github_id' => ['required', 'int', 'gt:0', 'exists:roles,github_id'],
-            'github_id' => ['required', 'int', 'gt:0', 'unique:roles,github_id'],   
-            'role' => ['required', 'string', 'in:superadmin,mentor,admin,student'],
+            'authorized_github_id' => new RoleNameRule(),
+            'github_id' => new GithubIdRule(),   
+            'role' => ['required', 'string', new RoleNameRule()],
         ];
     }   
 }

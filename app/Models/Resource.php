@@ -31,6 +31,10 @@ class Resource extends Model
     /** @use HasFactory<\Database\Factories\ResourceFactory> */
     use HasFactory;
 
+    public const VALID_CATEGORIES = ['Node', 'React', 'Angular', 'JavaScript', 'Java', 'Fullstack PHP', 'Data Science', 'BBDD'];
+    public const VALID_TYPES = ['Video', 'Cursos', 'Blog'];
+    protected $table = 'resources';
+
     protected $fillable = [
         'github_id',
         'title',

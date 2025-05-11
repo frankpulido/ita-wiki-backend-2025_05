@@ -8,6 +8,8 @@ use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use App\Rules\GithubIdRule;
 use App\Rules\RoleStudentRule;
+use App\Rules\ResourceCategoryRule;
+use App\Rules\ResourceTypeRule;
 
 class StoreResourceRequest extends FormRequest
 {
@@ -34,10 +36,10 @@ class StoreResourceRequest extends FormRequest
             'title' => ['required', 'string', 'min:5', 'max:255'],
             'description' => ['nullable', 'string', 'min:10', 'max:1000'],
             'url' => ['required', 'url'],
-            'category' => ['required', 'string', 'in:Node,React,Angular,JavaScript,Java,Fullstack PHP,Data Science,BBDD'],
+            'category' => ['required', 'string', new ResourceCategoryRule()],
             'tags' => ['nullable', 'array', 'max:5'],
             'tags.*' => ['string', 'distinct', Rule::exists('tags', 'name')],
-            'type' =>['required', 'string', 'in:Video,Cursos,Blog']
+            'type' =>['required', 'string', new ResourceTypeRule()],
         ];
     }  
 }

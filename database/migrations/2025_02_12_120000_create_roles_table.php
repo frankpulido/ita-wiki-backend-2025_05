@@ -1,6 +1,7 @@
 <?php
 declare(strict_types = 1);
 
+use App\Models\Role;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -15,7 +16,7 @@ return new class extends Migration
         Schema::create('roles', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('github_id')->unsigned()->unique();
-            $table->enum('role', ['superadmin', 'admin', 'mentor', 'student']);
+            $table->enum('role', Role::VALID_ROLES);
             $table->timestamps();
         });
     }
