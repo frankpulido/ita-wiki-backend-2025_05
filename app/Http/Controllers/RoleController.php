@@ -156,7 +156,7 @@ class RoleController extends Controller
     public function getRoleByGithubId(Request $request)
     {
         $validated = $request->validate([
-            'github_id' => 'required|integer'
+            'github_id' => new GithubIdRule()
         ]);
 
         $role = Role::where('github_id', $validated['github_id'])->first();

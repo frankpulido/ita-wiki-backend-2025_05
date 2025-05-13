@@ -18,7 +18,7 @@ class RoleNameRule implements ValidationRule
     public function validate(string $attribute, mixed $value, Closure $fail): void
     {
         if (!in_array($value, Role::VALID_ROLES)) {
-            $fail('Las roles válidos son las siguientes: ' . implode(', ', Role::VALID_ROLES));
+            $fail('Los roles válidos son las siguientes: ' . implode(', ', Role::VALID_ROLES));
         }
     }
 }

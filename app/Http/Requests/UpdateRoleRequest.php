@@ -26,8 +26,8 @@ class UpdateRoleRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'authorized_github_id' => new GithubIdRule(),
-            'github_id' => new GithubIdRule(),
+            'authorized_github_id' => [new GithubIdRule(), 'exists:roles,github_id'],
+            'github_id' => [new GithubIdRule(), 'exists:roles,github_id'],
             'role' => ['required', 'string', new RoleNameRule()],
         ];
     }
