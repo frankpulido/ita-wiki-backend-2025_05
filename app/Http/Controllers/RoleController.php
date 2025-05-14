@@ -56,7 +56,7 @@ class RoleController extends Controller
      *     )
      * )
      */
-    
+
     public function createRole(CreateRoleRequest $request, CreateRoleService $createRoleService): JsonResponse
     {
         return $createRoleService($request->validated());
@@ -103,7 +103,7 @@ class RoleController extends Controller
      *     )
      * )
     */
-    
+
 
     public function updateRole(UpdateRoleRequest $request, UpdateRoleService $updateRoleService): JsonResponse
     {
@@ -224,7 +224,6 @@ class RoleController extends Controller
     */
 
 
-    // Feature Flag : Role Self Assignment
     public function roleSelfAssignment(Request $request)
     {
         $validated = $request->validate([
