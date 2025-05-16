@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use App\Rules\GithubIdRule;
@@ -54,7 +55,7 @@ class UpdateResourceFormRequest extends FormRequest
             'description' => ['nullable', 'string', 'min:10', 'max:1000'],
             'url' => ['required', 'url'],
             'tags' => ['nullable', 'array', 'max:5'],
-            'tags.*' => ['string', 'distinct', 'exists:tags,name']
+            'tags.*' => ['string', 'distinct', Rule::exists('tags', 'name')]
         ];
     }
     public function validated($key = null, $default = null)
