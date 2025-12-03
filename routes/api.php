@@ -10,6 +10,9 @@ use App\Http\Controllers\LikeController;
 use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 
+Route::get('/health', function () {
+    return response()->json(['timestamp' => now(), 'service' => 'ITA Wiki - Resource Manager', 'status' => 'OK'], 200);
+});
 
 Route::post('/resources', [ResourceController::class, 'store'])->name('resources.store');
 

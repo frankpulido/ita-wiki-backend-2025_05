@@ -1,13 +1,14 @@
 {
     "$schema": "https://railway.com/railway.schema.json",
     "build": {
-        "builder": "NIXPACKS"
+        "builder": "RAILPACK",
+        "buildCommand": "composer install --no-dev --optimize-autoloader"
     },
     "deploy": {
         "region": "us-west2",
         "runtime": "V2",
         "numReplicas": 1,
-        "startCommand": "php artisan optimize:clear && php artisan migrate:fresh --seed --force && php artisan l5-swagger:generate && php artisan serve --host=0.0.0.0 --port=$PORT",
+        "startCommand": "for i in {1..5}; do php artisan optimize:clear && php artisan migrate:fresh --seed --force && php artisan l5-swagger:generate && break; sleep 10; done; php artisan serve --host=0.0.0.0 --port=$PORT",
         "sleepApplication": false,
         "multiRegionConfig": {
             "us-west2": {
@@ -15,6 +16,12 @@
             }
         },
         "restartPolicyType": "ON_FAILURE",
-        "restartPolicyMaxRetries": 10
+        "restartPolicyMaxRetries": 10,
+        "cron": {
+            "resetDatabase": {
+                "schedule": "0 0 * * *",
+                "command": "php artisan migrate:fresh --seed --force"
+            }
+        }
     }
 }
