@@ -8,7 +8,7 @@
         "region": "us-west2",
         "runtime": "V2",
         "numReplicas": 1,
-        "startCommand": "for i in {1..5}; do php artisan optimize:clear && php artisan migrate:fresh --seed --force && php artisan l5-swagger:generate && break; sleep 10; done; php artisan serve --host=0.0.0.0 --port=$PORT",
+        "startCommand": "for i in {1..5}; do php artisan optimize:clear && php artisan migrate:fresh --force && php artisan db:seed --force && php artisan l5-swagger:generate && break; sleep 10; done; php artisan serve --host=0.0.0.0 --port=$PORT",
         "sleepApplication": false,
         "multiRegionConfig": {
             "us-west2": {
