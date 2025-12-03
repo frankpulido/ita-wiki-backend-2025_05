@@ -16,7 +16,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'sqlite'),
+    'default' => env('DB_CONNECTION', 'mysql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -169,5 +169,23 @@ return [
         ],
 
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Testing Database Connections
+    |--------------------------------------------------------------------------
+    |
+    | Here you may define the database connections used when running tests.
+    | These connections will override the default connections for the
+    | testing environment. You can specify a different database for
+    | each database connection defined in the "connections" array.
+    |
+    */
+    'testing' => [
+        'driver' => 'sqlite',
+        'database' => ":memory:",
+        'prefix' => '',
+    ],
+
 
 ];
