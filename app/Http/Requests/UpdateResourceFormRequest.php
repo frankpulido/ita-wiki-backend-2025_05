@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use App\Rules\GithubIdRule;
@@ -32,25 +33,29 @@ class UpdateResourceFormRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'github_id' => ['required', 'integer', 'gt:0'],
+            'github_id' => [new GithubIdRule(), new RoleStudentRule()],
+
             // Code below works but is not the way to do it, we should use authorize() above
-            /*
             'github_id' => [
                 new GithubIdRule(),
                 new RoleStudentRule(),
                 function ($attribute, $value, $fail) {
                     $resource = $this->route('resource');
+                    if (!$resource) {
+                        $fail('El recurso indicado no existe.');
+                    }
                     if (!$resource || $value != $resource->github_id) {
-                        $fail('You are not authorized to update this resource.');
+                        $fail('No puedes modificar un recurso creado por otro estudiante.');
                     }
                 }
             ],
-            */
+            // END of code that works but is not the right way to do it
+
             'title' => ['required', 'string', 'min:5', 'max:255'],
             'description' => ['nullable', 'string', 'min:10', 'max:1000'],
             'url' => ['required', 'url'],
             'tags' => ['nullable', 'array', 'max:5'],
-            'tags.*' => ['string', 'distinct', 'exists:tags,name']
+            'tags.*' => ['string', 'distinct', Rule::exists('tags', 'name')]
         ];
     }
     public function validated($key = null, $default = null)

@@ -21,6 +21,8 @@ class Role extends Model
 {
     /** @use HasFactory<\Database\Factories\RoleFactory> */
     use HasFactory;
+    
+    public const VALID_ROLES = ['student', 'mentor', 'admin', 'superadmin'];
 
     protected $table = 'roles';
     protected $fillable = [

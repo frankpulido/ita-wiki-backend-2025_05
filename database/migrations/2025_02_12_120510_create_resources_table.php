@@ -2,6 +2,7 @@
 
 declare (strict_types= 1);
 
+use App\Models\Resource;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -24,9 +25,9 @@ return new class extends Migration
             $table->string('title');
             $table->string('description')->nullable();
             $table->string('url');
-            $table->enum('category', ['Node', 'React', 'Angular', 'JavaScript', 'Java', 'Fullstack PHP', 'Data Science', 'BBDD']);
+            $table->enum('category', Resource::VALID_CATEGORIES);
             $table->json('tags')->nullable(); // Options must be restricted in Form Request (as defined in table tags)
-            $table->enum('type', ['Video', 'Cursos', 'Blog']);
+            $table->enum('type', Resource::VALID_TYPES);
             $table->integer('bookmark_count')->default(0);
             $table->integer('like_count')->default(0);
             $table->timestamps();

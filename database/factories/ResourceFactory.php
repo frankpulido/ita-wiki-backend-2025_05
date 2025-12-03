@@ -4,6 +4,7 @@ declare (strict_types= 1);
 
 namespace Database\Factories;
 
+use App\Models\Resource;
 use App\Models\Role;
 use App\Models\Tag;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -35,9 +36,9 @@ class ResourceFactory extends Factory
             'title' => $this->faker->sentence(4),
             'description' => $this->faker->sentence(6),
             'url' => $this->faker->url(),
-            'category' => $this->faker->randomElement(['Node', 'React', 'Angular', 'JavaScript', 'Java', 'Fullstack PHP', 'Data Science', 'BBDD']),
+            'category' => $this->faker->randomElement(Resource::VALID_CATEGORIES),
             'tags' => $this->faker->randomElements($validTags, $this->faker->numberBetween(1, 5)),
-            'type' => $this->faker->randomElement(['Video', 'Cursos', 'Blog']),
+            'type' => $this->faker->randomElement(Resource::VALID_TYPES),
             'created_at' => $createdAtDate,
             'updated_at' => $updatedAtDate,
         ];

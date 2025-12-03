@@ -13,37 +13,66 @@ class UpdateResourceTest extends TestCase
 {
     use WithFaker;
 
-    //creamos diferentes resources
+    protected $student1;
+    protected $student2;
+    protected $mentor;
+    protected $resource1;
+    protected $resource2;
+
+    public function setUp(): void
+    {
+        parent::setUp();
+        $this->student1 = Role::factory()->create([
+            'github_id' => 123456,
+            'role' => 'student'
+        ]);
+        $this->student2 = Role::factory()->create([
+            'github_id' => 654321,
+            'role' => 'student'
+        ]);
+        $this->mentor = Role::factory()->create([
+            'github_id' => 234567,
+            'role' => 'mentor'
+        ]);
+        $this->resource1 = Resource::factory()->create([
+            'github_id' => $this->student1->github_id,
+            'title' => 'Resource 1',
+            'description' => 'Description 1',
+            'url' => 'https://example.com/resource1',
+        ]);
+        $this->resource2 = Resource::factory()->create([
+            'github_id' => $this->student2->github_id,
+            'title' => 'Resource 2',
+            'description' => 'Description 2',
+            'url' => 'https://example.com/resource2',
+        ]);
+    }
+
+    // Solicitar la creación de un reource
     private function createResource(array $overrides = []): Resource
     {
         return Resource::factory()->create($overrides);
     }
 
-    //Solicitar una actualizacion de un reource
+    // Solicitar una actualizacion de un resource
     private function updateResourceRequest(int $resourceId, array $data)
     {
         return $this->putJson(route('resources.update', $resourceId), $data);
     }
 
-   //Puede actualizar un resource
-    public function testItCanUpdateAResource()
+    // Test un student puede actualizar un resource del que es autor
+    public function testStudentCanUpdateAResource()
     {
-
-        $role = Role::factory()->create(['github_id' => 12345]);
-
-        
-        $resource = $this->createResource(['github_id' => $role->github_id]);
-
-        // Datos para actualizar
+        // Datos para la actualización
         $data = [
-            'github_id' => $role->github_id, 
+            'github_id' => $this->student1->github_id, 
             'title' => 'Updated title',
             'description' => 'Updated description',
             'url' => 'https://updated-url.com',
         ];
 
          // Solicitud de actualización
-        $response = $this->updateResourceRequest($resource->id, $data);
+        $response = $this->updateResourceRequest($this->resource1->id, $data);
 
         //Respuesta
         $response->assertStatus(200)
@@ -55,60 +84,44 @@ class UpdateResourceTest extends TestCase
 
         // Verificar que se hayan actualizado en la base de datos
         $this->assertDatabaseHas('resources', [
-            'id' => $resource->id,
+            'id' => $this->resource1->id,
             'title' => 'Updated title',
             'description' => 'Updated description',
             'url' => 'https://updated-url.com',
         ]);
     }
 
-/*     //Devuelve 404 cuando el Resource no existe.
-    public function testItReturns404WhenResourceNotFound()
+    // Test un student NO puede actualizar un resource del que NO es autor
+    public function testStudentCannotUpdateAResourceCreatedByOtherStudent()
     {
-      // ID que no existe
-        $nonExistentId = 9999;
-
-     // Solicitud de actualización
-        $response = $this->updateResourceRequest($nonExistentId, [
+        // Datos para la actualización
+        $data = [
+            'github_id' => $this->student1->github_id, 
             'title' => 'Updated title',
             'description' => 'Updated description',
             'url' => 'https://updated-url.com',
+        ];
+
+        // Solicitud de actualización
+        $response = $this->updateResourceRequest($this->resource2->id, $data);
+
+        //Respuesta
+        $response->assertStatus(422)
+                ->assertJsonFragment([
+                    'No puedes modificar un recurso creado por otro estudiante.'
+                ]);
+
+        // Verificar que no se haya actualizado en la base de datos
+        $this->assertDatabaseHas('resources', [
+            'id' => $this->resource2->id,
+            'title' => $this->resource2->title,
+            'description' => $this->resource2->description,
+            'url' => $this->resource2->url,
         ]);
-
-       // Verificamos que se devuelve el error 404
-        $response->assertStatus(404);
-
-      // Verificamos que no se haya creado ningún Resource
-        $this->assertDatabaseCount('resources', 0);
-    } */
+    }
 
     // Devuelve 422 cuando se intenta usar una URL duplicada
-    public function testItCanShowStatus422WithDuplicateUrl()
-    {
-        // A partir de un Resource existente
-        $existingResource = $this->createResource();
-
-        // Crear otro Resource para actualizar
-        $resourceToUpdate = $this->createResource();
-
-        // Intentar actualizar con la misma URL
-        $response = $this->updateResourceRequest($resourceToUpdate->id, [
-            'title' => 'Updated title',
-            'description' => 'Updated description',
-            'url' => $existingResource->url, 
-        ]);
-
-        // Verificamos que se devuelva un error 422
-        $response->assertStatus(422);
-
-        // Verificamos que no se haya actualizado
-        $this->assertDatabaseHas('resources', [
-            'id' => $resourceToUpdate->id,
-            'title' => $resourceToUpdate->title,
-            'description' => $resourceToUpdate->description,
-            'url' => $resourceToUpdate->url,
-        ]);
-    }
+    // ESTA CONDICIÓN YA NO EXISTE, SE PUEDE USAR LA MISMA URL EN 2 RECURSOS DISTINTOS
 
     /**
      *
