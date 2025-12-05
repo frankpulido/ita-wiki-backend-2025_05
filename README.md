@@ -2,18 +2,18 @@
 
 ORIGINAL SOURCE : https://github.com/IT-Academy-BCN/ita-wiki-backend
 
-Luis Vicente
-Jordi Morillo
-Juan Valdivia
-Raquel Martínez
-Stéphane Carteaux
-Diego Chacón
-Óscar Anguera
-Rossana Liendo
-Constanza Gómez
-Xavier R
-Sergio López
-Frank Pulido (@frankpulido)
+- Luis Vicente
+- Jordi Morillo
+- Juan Valdivia
+- Raquel Martínez
+- Stéphane Carteaux
+- Diego Chacón
+- Óscar Anguera
+- Rossana Liendo
+- Constanza Gómez
+- Xavier R
+- Sergio López
+- Frank Pulido (@frankpulido)
 
 # LARAVEL PERMISSION ISSUES
 
