@@ -15,250 +15,311 @@ ORIGINAL SOURCE : https://github.com/IT-Academy-BCN/ita-wiki-backend
 - Sergio López
 - Frank Pulido (@frankpulido)
 
-# LARAVEL PERMISSION ISSUES
+# Instructions below allow you to develop locally in your computer. [<Click me to deploy to Railway>](https://www.notion.so/Set-up-Laravel-to-Deploy-to-Railway-2834893773ea8067ac07ee6fd8567813?pvs=21)
+# IMPORTANT !!! Railway has deprecated NIXPACK, the actual default Builder is RAILPACK. This README needs an update.
 
-This document helps troubleshooting common permission issues. It ensures directory ownership/permissions are *all correct and consistent* with a macOS + XAMPP setup.
+## 1.A Prepare your project folder and files
 
-## **Does Laravel create new projects with wrong permissions by default?**
+- Create project root folder `my-project`.
+- Place your Laravel app inside `my-project/laravel` with `artisan`, `composer.json`, `public`, etc.
+- Place your React app inside `my-project/react`.
 
-Not exactly “wrong” — it’s just that:
+## 1.B If you are cloning someone else’s GitHub repository :
 
-- macOS’s **default group for files is your user’s primary group** (usually `admin`)
-- XAMPP/Apache runs as **daemon**
-- So when Laravel writes cache or logs, your user can write, but Apache/daemon cannot.
-
-This is **normal on macOS**, because the default `composer create-project` command doesn’t know about Apache’s user (`daemon`).
-
-So it’s not a bug — it’s just Unix permissions + XAMPP user mismatch.
-
-### This guide helps you fix ownership so both you and Apache can access all bootstrap files :
-
-- you (owner) → full access
-- daemon (group) → full access
-- others → read only (unless working in a devs team)
-
-This is the standard pattern used on Linux web servers.
-
-### ✅ After fixing permissions as explained in sections below, try :
+Just open terminal from the directory where you want to place the project root folder
 
 ```bash
-composer install
-php artisan optimize
-# these 2 commands will run beautifully
+git clone <project ssh root>
 ```
 
-### **🎯 Is anything left to fix after running the scripts explained in next sections?**
+After you have performed either 1A or 1B :
 
-No — your project will be configured correctly.
-If you spin up a dev environment with `php artisan serve`, Apache, or XAMPP, everything will behave properly.
-
----
-
-# Scripts for either a SOLO project or a Devs Team not using Docker
-
-### ✅ **Key takeaway**
-
-The workflow we set up in the sections below (XAMPP + fix script) is fine for **learning and personal projects**, but:
-
-- Professional developers almost never use XAMPP for serious Laravel development.
-- They use **containerization (Sail/Docker)** or **native PHP/MySQL** installations.
-- That eliminates **permissions headaches** completely.
-
-### ✅ **XAMPP + permissions juggling approach (sections below) – when it makes sense**
-
-**Use case:**
-
-- Students or hobbyists **learning Laravel**.
-- Working in a team via **Git (GitFlow, shared repository)**.
-- Each developer may have **different OSes, PHP versions, or databases** (XAMPP, native MySQL, Oracle MySQL, etc.).
-- Projects are **small to medium**, not production-critical.
-
-**Why it works:**
-
-- Everyone can run Laravel locally on their own setup.
-- The “fix permissions” script standardizes file access for **storage/ and bootstrap/cache/**.
-- Git ensures code consistency even if local environments differ.
-- Team members **don’t need to match exact PHP versions or OS configs** to collaborate.
-
-### ✅ **Why permissions issues happen when cloning a Laravel project**
-
-When a student **clones another student’s GitHub repository**:
-
-- All files are owned by the **user who cloned the repo**.
-- On macOS/XAMPP, the Apache user is `daemon`. On Linux it might be `www-data`. On Windows with XAMPP it’s usually the XAMPP Apache user.
-- `storage/` and `bootstrap/cache/` **need to be writable** by the web server.
-- Since the cloned files are owned by the student’s user, **Apache cannot write** → `Permission denied`.
-
-This is the **classic scenario for the XAMPP + permissions juggling approach**.
-
----
-
-## **1️⃣ SOLO PROJECT : Script to fix permissions in Laravel on macOS + XAMPP**
-
-Here’s a **safe shell script** you can run anytime you hit permissions errors:
+- Copy environment settings template:
 
 ```bash
-#!/bin/bash
-# fix-laravel-permissions.sh
-# Run from the root of your Laravel project
-
-# Change ownership: your user + daemon group
-sudo chown -R $USER:daemon .
-
-# Folders: readable, writable, and executable by owner & group
-find . -type d -exec chmod 775 {} \;
-
-# Files: readable & writable by owner & group
-find . -type f -exec chmod 664 {} \;
-
-echo "✅ Laravel permissions fixed for macOS + XAMPP!"
-```
-
-### How to use it:
-
-1. Save as `fix-laravel-permissions.sh` in your project root.
-2. Make it executable :
-    
-    ```bash
-    chmod +x fix-laravel-permissions.sh
-    ```
-    
-3. Run it anytime :
-    
-    ```bash
-    ./fix-laravel-permissions.sh
-    ```
-    
-
-It fixes:
-
-- `storage/`
-- `bootstrap/cache/`
-- `bootstrap/app.php` and all other files
-- Everything else in your project for safe Laravel + XAMPP usage
-
-When creating a new project (e.g `<project-name>`) we can run 3 commands in the same line to set everything right :
-
-```bash
-laravel new project-name && cd project-name && ./fix-laravel-permissions.sh
+cp laravel/.env.example laravel/.env
 ```
 
 ---
 
-## **2️⃣ DEVs Group on same computer or cloning your repo : Multi-user setup**
+## 2. Configure Docker files
 
-If multiple users work on the same Mac or are going to clone your repo to work on the same Laravel project we can use a script that serve both, solo projects and multi-user setups :
+- `docker-compose.yml` in project root `my-project`, defining:
+    - `mysql` service (MySQL 8.0 image, port 3306 inside, mapped to host port 3700).
+    - `php` service (PHP-FPM, for serving Laravel via Nginx).
+    - `nginx` service (serves Laravel public dir, proxy to PHP).
+    - `laravel` service (CLI container built from Laravel folder, runs composer, artisan commands, queue worker).
+    - `react` service (runs React dev server on port 8989).
+- Dockerfiles for:
+    - PHP services (install PHP, extensions).
+    - Laravel CLI container (also installs Composer).
 
-- **Solo use:** It just sets your user as owner and `daemon` as the group for Laravel’s writable directories, fixing XAMPP permissions.
-- **Multi-user use:** If you configure a shared group (like `laraveldev`) and include all users + Apache in that group, the same script fixes permissions so **everyone can read/write safely**.
+---
 
-We need a script that :
+## 3. Configure Laravel `.env`
 
-1. Detect the **project root**
-2. Correct **ownership** (user + group)
-3. Fix **permissions**: 775 for directories, 664 for files
-4. Optionally, apply `setgid` on directories so new files inherit the group (important for team projects)
-
-This way, the same script works seamlessly whether it’s **only you** or **multiple developers**.
-
-### This is a safe script to use including `setgid` for team-friendly directories :
-
-```bash
-#!/bin/bash
-# fix-laravel-permissions.sh
-# Fixes Laravel permissions for macOS + XAMPP (solo or multi-user)
-
-# ===============================
-# CONFIGURATION
-# ===============================
-# Change these if using a team group
-PROJECT_GROUP="daemon"    # Default for XAMPP solo setup
-# For team projects, create a group like 'laraveldev' and include all users + daemon
-# PROJECT_GROUP="laraveldev"
-
-# ===============================
-# SCRIPT
-# ===============================
-echo "🔧 Fixing Laravel permissions..."
-
-# Ensure the script is run from project root
-if [ ! -f "artisan" ]; then
-    echo "❌ artisan not found! Run this script from the root of your Laravel project."
-    exit 1
-fi
-
-# Fix ownership: your user + configured group
-sudo chown -R $USER:$PROJECT_GROUP .
-
-# Fix directories: read/write/execute for owner & group, others read/execute
-# Also set setgid so new files inherit the group
-find . -type d -exec sudo chmod 2775 {} \;
-
-# Fix files: read/write for owner & group, read-only for others
-find . -type f -exec sudo chmod 664 {} \;
-
-echo "✅ Laravel permissions fixed!"
-echo "ℹ️ Directories: 775 + setgid, Files: 664"
-echo "📁 Owner: $USER, Group: $PROJECT_GROUP"
-```
-
-**The script above is a a robust, one-script solution for macOS + Laravel + XAMPP that works for solo projects or multi-user setups.**
-
-### **How it works**
-
-1. **Ownership**: Sets your user as owner and `daemon` (or your team group) as group.
-2. **Directories**: `2775` = rwxrwxr-x + **setgid**, so new files inherit the group.
-3. **Files**: `664` = rw-rw-r--, safe for both Apache (`daemon`) and users.
-4. **Solo use**: Default group `daemon` works for XAMPP.
-5. **Team use**: Just change `PROJECT_GROUP` to your shared group (e.g., `laraveldev`).
-
-## ✅ Usage
-
-1. Save the script as `fix-laravel-permissions.sh` in the root of your Laravel project.
-2. Make it executable :
-    
-    ```bash
-    chmod +x fix-laravel-permissions.sh
-    ```
-    
-3. Run it from the project root :
-    
-    ```bash
-    ./fix-laravel-permissions.sh
-    ```
-    
-4. Done — now **Composer, Artisan, and Apache** all have proper access.
-
-## ✅ **Benefits**
-
-- Fixes storage, bootstrap/cache, bootstrap/app.php, and everything else.
-- Prevents future permission issues with XAMPP or multiple users.
-- Safe: no world-writable 777 directories.
-- Easy to reuse across projects.
-
-# Workflow
-
-When creating a new project (e.g `<project-name>`) we can run 3 commands in the same line to set everything right :
+Set in `my-project/laravel/.env`:
 
 ```bash
-laravel new project-name && cd project-name && ./fix-laravel-permissions.sh
+DB_CONNECTION=mysql
+DB_HOST=mysql
+DB_PORT=3306
+DB_DATABASE=app
+DB_USERNAME=app
+DB_PASSWORD=app
 ```
 
-### How it works:
+These match your MySQL Docker Compose environment variables at `my-project/docker-compose.yml.`
 
-1. `laravel new myproject` → creates the new Laravel project.
-2. `cd myproject` → moves into the project folder.
-3. `./fix-laravel-permissions.sh` → fixes **all ownership and permissions**, so Composer, Artisan, and Apache can run without issues.
+---
 
-### Tips:
+## 4. Start Docker containers
 
-- Make sure `fix-laravel-permissions.sh` is **copied** into a location you can reference, e.g., your home folder:
+From the project root `my-project` folder, run:
 
 ```bash
-cp ~/scripts/fix-laravel-permissions.sh .
+docker-compose up -d --build
 ```
 
-Then you can run the one-liner right after creating a project.
+This builds images (if needed) and starts all containers.
 
-- After this, you’ll never need `sudo` for Composer installs or Artisan commands inside that project.
-- If you’re doing multiple new projects, you can create a small folder `~/laravel-scripts/` with `fix-laravel-permissions.sh` and just copy it into the new project each time.
+---
+
+## 5. Verify containers are running
+
+Use:
+
+```bash
+docker-compose ps
+
+# You will see the following (similar) :
+frankpulidoalvarez@Franks-Mac-mini laravel % docker-compose ps
+NAME               IMAGE              COMMAND                  SERVICE   CREATED              STATUS                        PORTS
+my-project-laravel   my-project-laravel   "docker-php-entrypoi…"   laravel   About a minute ago   Up About a minute             8000/tcp
+my-project-mysql     mysql:8.0          "docker-entrypoint.s…"   mysql     About a minute ago   Up About a minute (healthy)   0.0.0.0:3700->3306/tcp, [::]:3700->3306/tcp
+my-project-nginx     nginx:alpine       "/docker-entrypoint.…"   nginx     About a minute ago   Up About a minute             0.0.0.0:8988->80/tcp, [::]:8988->80/tcp
+my-project-php       my-project-php       "docker-php-entrypoi…"   php       About a minute ago   Up About a minute             9000/tcp
+my-project-react     my-project-react     "docker-entrypoint.s…"   react     About a minute ago   Up About a minute             0.0.0.0:8989->5173/tcp, [::]:8989->5173/tcp
+```
+
+Each container (`mysql`, `nginx`, `php`, `laravel`, `react`) should show as "Up" or "Healthy".
+
+---
+
+## 6. Run Laravel commands inside the `laravel` container
+
+Run in `my-project` folder :
+
+```bash
+docker-compose exec laravel composer install
+docker-compose exec laravel php artisan key:generate
+docker-compose exec laravel php artisan migrate
+```
+
+This (1) installs dependencies, (2) sets APP_KEY, (3) creates database tables.
+
+---
+
+## 7. Access your apps
+
+- Laravel web app (served by Nginx) at:
+    
+    [http://localhost:8988](http://localhost:8988/)
+    
+- React dev server app at:
+    
+    [http://localhost:8989](http://localhost:8989/)
+    
+- MySQL database port on host at 3700 (for MySQL clients, NOT a web page).
+
+| **URL** | **Works ?** | **Notes** |
+| --- | --- | --- |
+| http://localhost:8988/ | Yes | Laravel app via nginx |
+| http://localhost:8989/ | Yes | React Vite dev server |
+| http://localhost:3700/ | No | MySQL port (not HTTP, no web) |
+
+```bash
+# To open mysql in terminal :
+docker-compose exec mysql mysql -uapp -papp app
+
+# Then execute sql commands :
+mysql> SHOW TABLES;
++-----------------------+
+| Tables_in_app         |
++-----------------------+
+| cache                 |
+| cache_locks           |
+| failed_jobs           |
+| job_batches           |
+| jobs                  |
+| migrations            |
+| password_reset_tokens |
+| sessions              |
+| users                 |
++-----------------------+
+9 rows in set (0.00 sec)
+```
+
+---
+
+## 8. Optional troubleshooting
+
+- If MySQL 8 authentication errors (`caching_sha2_password`), fix by adding this to your MySQL service in `docker-compose.yml`:
+
+```bash
+command: --default-authentication-plugin=mysql_native_password
+```
+
+- Then rebuild and restart containers.
+- Ensure environment variables match between `.env` and Docker Compose.
+- Check logs with:
+
+```bash
+docker-compose logs laravel
+docker-compose logs mysql
+```
+
+This is the full, methodical sequence to set up your Laravel app with Docker, MySQL, and React.
+
+---
+
+## IMPORTANT : Everytime `.env` is modified
+
+If you modify `.env`, run these commands to clear cached configs (inside laravel container):
+
+```bash
+docker-compose exec laravel php artisan config:clear
+docker-compose exec laravel php artisan cache:clear
+# Or just this command below :
+docker-compose exec laravel php artisan optimize:clear
+
+# Then rebuild and restart the containers :
+docker-compose down
+docker-compose up -d --build
+
+# Run migrations :
+docker-compose exec laravel php artisan migrate
+```
+
+## Notes
+
+- Use `docker-compose exec laravel php` prefix to run PHP artisan commands inside Laravel container from the project directory : bash notifier>.
+
+```bash
+frankpulidoalvarez@Franks-Mac-mini my-project % docker-compose exec laravel php artisan migrate
+```
+
+- Use `docker-compose exec php` prefix to run PHP artisan commands inside Laravel container from laravel directory : bash laravel>.
+
+```bash
+frankpulidoalvarez@Franks-Mac-mini laravel % docker-compose exec php artisan migrate
+```
+
+- `docker-compose.yml` at the root orchestrates services: Laravel app, Nginx, DB, React, PHP.
+- `nginx/default.conf` configures web server behavior.
+- `php/Dockerfile` defines your PHP container environment.
+- Avoid running `php artisan` or `composer` commands on host directly for Dockerized app.
+
+## DOCKERFILE
+
+There are 2 Dockerfiles in the project **my-project :**
+
+```bash
+/my-project/laravel/Dockerfile
+/my-project/php/Dockerfile
+```
+
+Your two Dockerfiles serve different purposes:
+
+1. `my-project/php/Dockerfile` is your main PHP-FPM container for running the Laravel app web server.
+2. `my-project/laravel/Dockerfile` is a separate CLI-focused image with Composer installed, used mainly to run artisan tasks and install dependencies.
+
+## How this affects your workflow:
+
+- The PHP container built from `my-project/php/Dockerfile` **does not include Composer** by default (which is why running `docker-compose exec php composer` gave a not found error).
+- The Laravel CLI container built from `my-project/laravel/Dockerfile` **does include Composer**.
+- Your `docker-compose.yml` (likely) has **both services** defined, with one using `php/Dockerfile` and one using `laravel/Dockerfile` as builds.
+
+## What you likely need to do:
+
+- Run Composer and Artisan commands in the **Laravel CLI container**, not the PHP-FPM container (see previous section Notes)
+- Use the service name for the Laravel CLI service from your `docker-compose.yml`. In our case is `laravel`.
+
+**How to check service names (from your project root) :**
+
+```bash
+# Run :
+docker-compose ps
+# We get :
+frankpulidoalvarez@Franks-Mac-mini my-project % docker compose ps
+NAME               IMAGE                  COMMAND                 SERVICE   CREATED       STATUS                 PORTS
+my-project-laravel   my-project-laravel   "docker-php-entrypoi…". laravel   5 hours ago   Up 5 hours             8000/tcp
+my-project-mysql     mysql:8.0            "docker-entrypoint.s…"  mysql     5 hours ago   Up 5 hours (healthy)   0.0.0.0:3700->3306/tcp, [::]:3700->3306/tcp
+my-project-nginx     nginx:alpine         "/docker-entrypoint.…". nginx     5 hours ago   Up 5 hours             0.0.0.0:8988->80/tcp, [::]:8988->80/tcp
+my-project-php       my-project-php       "docker-php-entrypoi…". php       5 hours ago   Up 5 hours             9000/tcp
+my-project-react     my-project-react     "docker-entrypoint.s…". react     5 hours ago   Up 5 hours             0.0.0.0:8989->5173/tcp, [::]:8989->5173/tcp
+frankpulidoalvarez@Franks-Mac-mini my-project % 
+
+```
+
+---
+
+## Related
+
+These sources collectively cover everything from the Docker configurations, environment variables management, MySQL setup inside Docker, Laravel artisan commands execution, and running migrations to access and verify your database.
+
+### 1. DigitalOcean — How To Set Up Laravel, Nginx, and MySQL with Docker Compose
+
+https://www.digitalocean.com/community/tutorials/how-to-set-up-laravel-nginx-and-mysql-with-docker-compose
+
+- Detailed tutorial on building Laravel app stack using Docker Compose with PHP, MySQL, and Nginx.
+- Covers service definitions, volumes, networking, environment variables, and migrations.
+- Explains creating database users, running migrations, and troubleshooting.
+
+---
+
+### 2. YouTube - Docker + Laravel + MySQL Easy and Professional Way
+
+https://www.youtube.com/watch?v=V-MDfE1I6u0
+
+- Video walkthrough showing how to build Dockerized Laravel app with PHP, MySQL, and Nginx.
+- Shows Dockerfile, docker-compose.yml setup, and environment config.
+- Useful to see real-time setup and debugging.
+
+---
+
+### 3. Laravel Official Docs - Laravel Sail
+
+https://laravel.com/docs/12.x/sail
+
+- The official Laravel lightweight Docker development environment.
+- Provides reference for how Laravel uses Docker under the hood with MySQL, Redis, and PHP.
+- Good for understanding modern Docker-Laravel integration.
+
+---
+
+### 4. Dev.to - Dockerizing a Laravel App with Nginx, MySQL, PhpMyAdmin, and PHP
+
+https://dev.to/kamruzzaman/dockerizing-a-laravel-app-nginx-mysql-phpmyadmin-and-php-82-43ne
+
+- Step-by-step blog post on building a Laravel dev environment with Docker Compose.
+- Includes adding PhpMyAdmin to manage MySQL visually, configuring environment variables, and running artisan commands.
+
+---
+
+### 5. Laracasts Discussion - Laravel through Docker Container
+
+https://laracasts.com/discuss/channels/laravel/laravel-through-docker-container
+
+- Active community Q&A with many practical tips, common pitfalls, and recommendations for Laravel and Docker integration.
+
+---
+
+### 6. Docker Docs - Laravel Development Setup
+
+https://docs.docker.com/guides/frameworks/laravel/development-setup/
+
+- Official Docker guide for setting Laravel development environment with Docker Compose.
+- Includes PHP, MySQL, and Nginx setup, environment variable usage, volumes, and networking explained.
+
+---
